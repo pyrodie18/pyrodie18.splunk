@@ -1,0 +1,4 @@
+[MESSAGES CONTROL]
+disable =
+    catching-non-exception,
+    raising-non-exception
