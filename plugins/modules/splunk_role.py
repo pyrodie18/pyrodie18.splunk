@@ -4,9 +4,8 @@
 # Copyright: Troy Ward
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from ansible_collections.pyrodie18.splunk.plugins.module_utils.base import SplunkBase
-import ansible_collections.pyrodie18.splunk.plugins.module_utils.helpers as SplunkHelpers
-from ansible.module_utils.basic import AnsibleModule
+from __future__ import absolute_import, division, print_function
+__metaclass__ = type
 
 
 DOCUMENTATION = """
@@ -134,6 +133,10 @@ EXAMPLES = """
     state: absent
 
 """
+
+from ansible_collections.pyrodie18.splunk.plugins.module_utils.base import SplunkBase
+import ansible_collections.pyrodie18.splunk.plugins.module_utils.helpers as SplunkHelpers
+from ansible.module_utils.basic import AnsibleModule
 
 
 class SplunkRole(SplunkBase):

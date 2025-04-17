@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division, print_function
+__metaclass__ = type
 import ansible_collections.pyrodie18.splunk.plugins.module_utils.helpers as SplunkHelpers
 import re
 from copy import deepcopy

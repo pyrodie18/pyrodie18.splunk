@@ -4,10 +4,8 @@
 # Copyright: Troy Ward
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from ansible.module_utils.basic import AnsibleModule
-import ansible_collections.pyrodie18.splunk.plugins.module_utils.helpers as SplunkHelpers
-from ansible_collections.pyrodie18.splunk.plugins.module_utils.base import SplunkBase
-
+from __future__ import absolute_import, division, print_function
+__metaclass__ = type
 
 DOCUMENTATION = """
 ---
@@ -102,6 +100,9 @@ EXAMPLES = """
 
 """
 
+from ansible.module_utils.basic import AnsibleModule
+import ansible_collections.pyrodie18.splunk.plugins.module_utils.helpers as SplunkHelpers
+from ansible_collections.pyrodie18.splunk.plugins.module_utils.base import SplunkBase
 
 class SplunkUser(SplunkBase):
     SERVICE_PATH = "/authentication/users"
