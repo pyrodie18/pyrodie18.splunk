@@ -104,6 +104,7 @@ from ansible.module_utils.basic import AnsibleModule
 import ansible_collections.pyrodie18.splunk.plugins.module_utils.helpers as SplunkHelpers
 from ansible_collections.pyrodie18.splunk.plugins.module_utils.base import SplunkBase
 
+
 class SplunkUser(SplunkBase):
     SERVICE_PATH = "/authentication/users"
     FIELD_MAPPING = {
