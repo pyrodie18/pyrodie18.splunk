@@ -10,7 +10,7 @@
         paths:
           - "plugins/**"
           - "tests/integration/**"
-          - ".github/workflows/plugins-integration.yml"
+          - ".github/workflows/plugin-integration.yml"
     
     jobs:
       integration:
