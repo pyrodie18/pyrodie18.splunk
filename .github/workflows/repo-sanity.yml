@@ -4,32 +4,7 @@
       push:
       pull_request:
     
-    jobs:
-      tox-linters:
-        name: Tox-Lint (py${{ matrix.python }})
-        strategy:
-          matrix:
-            python:
-              - '3.10'
-        runs-on: ubuntu-latest
-        steps:
-          - name: Check out code
-            uses: actions/checkout@v4
-            with:
-              path: ansible_collections/pyrodie18/splunk
-    
-          - name: Set up Python ${{ matrix.python }}
-            uses: actions/setup-python@v5
-            with:
-              python-version: ${{ matrix.python }}
-    
-          - name: Install dependencies
-            run: pip install flake8 tox
-    
-          - name: Run lint test for py3
-            run: tox -elinters-py3 -vv
-            working-directory: ./ansible_collections/pyrodie18/splunk
-    
+    jobs:  
       sanity:
         name: Sanity (Ⓐ${{ matrix.ansible }}+py${{ matrix.python }})
         strategy:

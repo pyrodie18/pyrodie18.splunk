@@ -1,17 +1,16 @@
 {
     "ANSIBLE_MODULE_ARGS": {
-        "email": "myemail@email.com",
-        "full_name": "My Name3",
-        "name": "troy",
+        "full_name": "Test User",
+        "name": "my_test_user",
         "password": "MyPASSword123!@#",
+        "email": "test@email.com",
         "state": "present",
         "splunk_api_username": "admin",
         "splunk_api_password": "PASSword123!@#",
-        "splunk_api_uri": "https://192.168.30.205",
+        "splunk_api_uri": "https://172.17.0.3",
         "validate_certs": "False",
         "roles": [
-            "admin",
-            "user"
+            "admin"
         ]
     }
 }

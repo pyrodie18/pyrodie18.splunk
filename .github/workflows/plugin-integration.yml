@@ -1,0 +1,87 @@
+---
+    name: plugins-integration
+    on:
+      push:
+        paths:
+          - "plugins/**"
+          - "tests/integration/**"
+          - ".github/workflows/plugins-integration.yml"
+      pull_request:
+        paths:
+          - "plugins/**"
+          - "tests/integration/**"
+          - ".github/workflows/plugins-integration.yml"
+    
+    jobs:
+      integration:
+        runs-on: ubuntu-latest
+        name: I (Ⓐ${{ matrix.ansible }}+py${{ matrix.python }}})
+        strategy:
+          fail-fast: false
+          matrix:
+            ansible:
+              # https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-changelogs
+              - stable-2.15
+              - stable-2.16
+              - stable-2.17
+              - stable-2.18
+              - devel
+            python:
+              - '3.9'
+              - '3.10'
+              - '3.11'
+              - '3.12'
+              - '3.13'
+            exclude:
+              - ansible: stable-2.18
+                python: '3.10'
+              - ansible: stable-2.18
+                python: '3.9'
+              - ansible: stable-2.17
+                python: '3.13'
+              - ansible: stable-2.16
+                python: '3.13'
+              - ansible: stable-2.15
+                python: '3.13'
+              - ansible: stable-2.15
+                python: '3.12'
+              - ansible: stable-2.16
+                python: '3.9'
+              - ansible: stable-2.17
+                python: '3.9'
+              - ansible: devel
+                python: '3.9'
+              - ansible: devel
+                python: '3.10'
+    
+        steps:
+          - name: Check out code
+            uses: actions/checkout@v4
+            with:
+              path: ansible_collections/community/zabbix
+    
+          - name: Set up Python ${{ matrix.python }}
+            uses: actions/setup-python@v5
+            with:
+              python-version: ${{ matrix.python }}
+    
+          - name: Install ansible-base (${{ matrix.ansible }})
+            run: pip install https://github.com/ansible/ansible/archive/${{ matrix.ansible }}.tar.gz --disable-pip-version-check
+    
+          - name: Splunk container server provisioning
+            uses: hoverkraft-tech/compose-action@v2.0.1
+            with:
+              compose-file: "./ansible_collections/pyrodie18/splunk/docker-compose.yml"
+    
+          # Run the integration tests
+          # As we need to connect to an existing docker container we can't use `--docker` here as the VMs would be on different
+          # (non-routing) networks, so we run them locally and ensure any required dependencies are installed via `--requirements`
+          - name: Run integration test
+            run: ansible-test integration -v --color --continue-on-error --diff --python ${{ matrix.python }} --requirements --coverage
+            working-directory: ./ansible_collections/pyrodie18/splunk
+    
+            # ansible-test support producing code coverage date
+          - name: Generate coverage report
+            run: ansible-test coverage xml -v --requirements --group-by command --group-by version
+            working-directory: ./ansible_collections/pyrodie18/splunk
+    

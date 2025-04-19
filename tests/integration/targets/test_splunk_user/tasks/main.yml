@@ -1,0 +1,115 @@
+---
+- block:
+  - name: Create test_user account
+    pyrodie18.splunk.splunk_user:
+      name: my_test_user
+      state: present
+      password: 'PASSword123!@#'
+      roles:
+        - admin
+      email: test@email.com
+      full_name: Test User
+      splunk_api_username: "{{ splunk_api_username }}"
+      splunk_api_password: "{{ splunk_api_password }}"
+      splunk_api_uri: "{{ splunk_api_uri }}"
+      validate_certs: false
+    register: splunk_user_created
+
+  - name: Assert that test_user changed
+    ansible.builtin.assert:
+      that: splunk_user_created.changed is sameas True
+
+  - name: Create test_user account (again)
+    pyrodie18.splunk.splunk_user:
+      name: my_test_user
+      state: present
+      password: 'PASSword123!@#'
+      roles:
+        - admin
+      email: test@email.com
+      full_name: Test User
+      splunk_api_username: "{{ splunk_api_username }}"
+      splunk_api_password: "{{ splunk_api_password }}"
+      splunk_api_uri: "{{ splunk_api_uri }}"
+      validate_certs: false
+    register: splunk_user_created
+
+  - name: Assert that test_user changed
+    ansible.builtin.assert:
+      that: splunk_user_created.changed is sameas False
+
+  - name: Update test_user account
+    pyrodie18.splunk.splunk_user:
+      name: my_test_user
+      state: present
+      password: 'PASSword123!@#'
+      roles:
+        - admin
+      email: test@email.com
+      full_name: Changed Test User
+      splunk_api_username: "{{ splunk_api_username }}"
+      splunk_api_password: "{{ splunk_api_password }}"
+      splunk_api_uri: "{{ splunk_api_uri }}"
+      validate_certs: false
+    register: splunk_user_created
+
+  - name: Assert that test_user changed
+    ansible.builtin.assert:
+      that: splunk_user_created.changed is sameas True
+
+  - name: Update test_user account (again)
+    pyrodie18.splunk.splunk_user:
+      name: my_test_user
+      state: present
+      password: 'PASSword123!@#'
+      roles:
+        - admin
+      email: test@email.com
+      full_name: Changed Test User
+      splunk_api_username: "{{ splunk_api_username }}"
+      splunk_api_password: "{{ splunk_api_password }}"
+      splunk_api_uri: "{{ splunk_api_uri }}"
+      validate_certs: false
+    register: splunk_user_created
+
+  - name: Assert that test_user changed
+    ansible.builtin.assert:
+      that: splunk_user_created.changed is sameas False
+
+  - name: Delete test_user account
+    pyrodie18.splunk.splunk_user:
+      name: my_test_user
+      state: absent
+      splunk_api_username: "{{ splunk_api_username }}"
+      splunk_api_password: "{{ splunk_api_password }}"
+      splunk_api_uri: "{{ splunk_api_uri }}"
+      validate_certs: false
+    register: splunk_user_created
+
+  - name: Assert that test_user changed
+    ansible.builtin.assert:
+      that: splunk_user_created.changed is sameas True
+
+  - name: Delete test_user account (Again)
+    pyrodie18.splunk.splunk_user:
+      name: my_test_user
+      state: absent
+      splunk_api_username: "{{ splunk_api_username }}"
+      splunk_api_password: "{{ splunk_api_password }}"
+      splunk_api_uri: "{{ splunk_api_uri }}"
+      validate_certs: false
+    register: splunk_user_created
+
+  - name: Assert that test_user changed
+    ansible.builtin.assert:
+      that: splunk_user_created.changed is sameas False
+
+  always:
+    - name: Cleanup
+      pyrodie18.splunk.splunk_user:
+        name: my_test_user
+        state: absent
+        splunk_api_username: "{{ splunk_api_username }}"
+        splunk_api_password: "{{ splunk_api_password }}"
+        splunk_api_uri: "{{ splunk_api_uri }}"
+        validate_certs: false

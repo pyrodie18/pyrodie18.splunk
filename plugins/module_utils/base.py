@@ -77,6 +77,8 @@ class SplunkBase(object):
 
         resp, info = fetch_url(module, full_url, data=data,
                                headers=headers, method=method,)
+        if info['status'] < 0:
+            module.fail_json(msg=info['msg'])
 
         # Decode HTTP response
         try:

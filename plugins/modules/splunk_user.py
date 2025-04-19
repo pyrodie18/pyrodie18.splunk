@@ -88,7 +88,7 @@ EXAMPLES = """
     roles:
         - user
         - admin
-    splunk_api_user: admin
+    splunk_api_username: admin
     splunk_api_password: 'PASSword123!@#'
     splunk_api_uri: https://localhost
 
@@ -129,7 +129,6 @@ class SplunkUser(SplunkBase):
             username = self.module.parms['name']
         search_path = f"{self.SERVICE_PATH}/{username}"
         response = self.send_request(self.module, search_path, catch_404=True)
-
         if response['status'] == 404:
             return False
 
@@ -166,7 +165,7 @@ class SplunkUser(SplunkBase):
 
         # Cleanup fields that breack sameness check and compare
         desired_state = SplunkHelpers.splunk_sanatize_dict(
-            desired_state, ['password', 'force_password_change'])
+            desired_state, ['password', 'force_password_change', 'create_role'])
         current_state = SplunkHelpers.splunk_sanatize_dict(
             current_state, ['capabilities', 'user_locked_out', ])
         if SplunkHelpers.splunk_dict_is_same(desired_state, current_state):
