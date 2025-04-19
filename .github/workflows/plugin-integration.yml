@@ -5,7 +5,7 @@
         paths:
           - "plugins/**"
           - "tests/integration/**"
-          - ".github/workflows/plugins-integration.yml"
+          - ".github/workflows/plugin-integration.yml"
       pull_request:
         paths:
           - "plugins/**"
