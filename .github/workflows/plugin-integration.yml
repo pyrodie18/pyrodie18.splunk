@@ -75,9 +75,12 @@
     
           - name:  Add container IP address to ansible inventory
             run: |
-              CONTAINER_ID=$(docker-compose ps -q splunk)
+              CONTAINER_ID=$(docker compose ps -q so1)
               IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CONTAINER_ID)
               echo "splunk_api_uri:  https://$IP" >> ./ansible_collections/pyrodie18/splunk/tests/integration/targets/setup_splunk/defaults/main.yml
+
+          - name: Dump File
+            run: cat ./ansible_collections/pyrodie18/splunk/tests/integration/targets/setup_splunk/defaults/main.yml
     
           # Run the integration tests
           # As we need to connect to an existing docker container we can't use `--docker` here as the VMs would be on different
