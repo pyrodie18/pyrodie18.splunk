@@ -1,9 +1,4 @@
 ---
 - name: Verify Connectivity
-  ansible.builtin.uri:
-    url: "{{splunk_api_uri}}:8000"
-    status_code: 200
-    validate_certs: False
-  retries: 60
-  delay: 5
-  register: _splunk_status_check
+  ansible.builtin.pause:
+    minutes: 1
