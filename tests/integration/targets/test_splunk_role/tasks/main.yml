@@ -1,0 +1,97 @@
+---
+- block:
+  - name: Create test_role role
+    pyrodie18.splunk.splunk_role:
+      name: test_role
+      state: present
+      splunk_api_username: "{{ splunk_api_username }}"
+      splunk_api_password: "{{ splunk_api_password }}"
+      splunk_api_uri: "{{ splunk_api_uri }}"
+      validate_certs: false
+    register: splunk_role_created
+
+  - name: Assert that test_role changed
+    ansible.builtin.assert:
+      that: splunk_role_created.changed is sameas True
+
+  - name: Create test_role role (again)
+    pyrodie18.splunk.splunk_role:
+      name: test_role
+      state: present
+      splunk_api_username: "{{ splunk_api_username }}"
+      splunk_api_password: "{{ splunk_api_password }}"
+      splunk_api_uri: "{{ splunk_api_uri }}"
+      validate_certs: false
+    register: splunk_role_created
+
+  - name: Assert that test_user changed
+    ansible.builtin.assert:
+      that: splunk_role_created.changed is sameas False
+
+  - name: Update test_role role
+    pyrodie18.splunk.splunk_role:
+      name: test_role
+      imported_roles: ['user']
+      state: present
+      splunk_api_username: "{{ splunk_api_username }}"
+      splunk_api_password: "{{ splunk_api_password }}"
+      splunk_api_uri: "{{ splunk_api_uri }}"
+      validate_certs: false
+    register: splunk_role_created
+
+  - name: Assert that test_user changed
+    ansible.builtin.assert:
+      that: splunk_role_created.changed is sameas True
+
+  - name: Update test_role role (again)
+    pyrodie18.splunk.splunk_role:
+      name: test_role
+      imported_roles: ['user']
+      state: present
+      splunk_api_username: "{{ splunk_api_username }}"
+      splunk_api_password: "{{ splunk_api_password }}"
+      splunk_api_uri: "{{ splunk_api_uri }}"
+      validate_certs: false
+    register: splunk_role_created
+
+  - name: Assert that test_user changed
+    ansible.builtin.assert:
+      that: splunk_role_created.changed is sameas False
+
+  - name: Delete test_role role
+    pyrodie18.splunk.splunk_role:
+      name: test_role
+      state: absent
+      splunk_api_username: "{{ splunk_api_username }}"
+      splunk_api_password: "{{ splunk_api_password }}"
+      splunk_api_uri: "{{ splunk_api_uri }}"
+      validate_certs: false
+    register: splunk_role_created
+
+  - name: Assert that test_role changed
+    ansible.builtin.assert:
+      that: splunk_role_created.changed is sameas True
+
+  - name: Delete test_role role (Again)
+    pyrodie18.splunk.splunk_user:
+      name: test_role
+      state: absent
+      splunk_api_username: "{{ splunk_api_username }}"
+      splunk_api_password: "{{ splunk_api_password }}"
+      splunk_api_uri: "{{ splunk_api_uri }}"
+      validate_certs: false
+    register: splunk_role_created
+
+  - name: Assert that test_role role
+    ansible.builtin.assert:
+      that: splunk_role_created.changed is sameas False
+
+  always:
+    - name: Cleanup
+      pyrodie18.splunk.splunk_role:
+        name: test_role
+        state: absent
+        splunk_api_username: "{{ splunk_api_username }}"
+        splunk_api_password: "{{ splunk_api_password }}"
+        splunk_api_uri: "{{ splunk_api_uri }}"
+        validate_certs: false

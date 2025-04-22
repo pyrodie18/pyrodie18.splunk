@@ -171,7 +171,10 @@ def splunk_extract_value(content, value, fallback=None):
     if tmp is None:
         return fallback
     else:
-        return tmp
+        try:
+            return int(tmp)
+        except:
+            return tmp
 
 
 def splunk_sanatize_dict(content, del_keys=None):
@@ -191,11 +194,18 @@ def splunk_sanatize_dict(content, del_keys=None):
     clean_copy = copy.deepcopy(content)
 
     for k, v in clean_copy.items():
-        if v is None or v == "":
+        if v is None:
+            del_keys.append(k)
+        elif isinstance(v, list) and len(v) == 0:
+            del_keys.append(k)
+        elif isinstance(v, str) and len(v) == 0:
             del_keys.append(k)
 
     for k in del_keys:
-        del clean_copy[k]
+        try:
+            del clean_copy[k]
+        except KeyError:
+            pass
 
     return clean_copy
 

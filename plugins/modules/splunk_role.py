@@ -41,11 +41,13 @@ options:
         description:
             - The total number of real-time searches for all members in the role.
             - Use '0' for unlimited.
+        default: 0
         type: int
     role_total_limit:
         description:
             - The total number of searches for all members in the role.
             - Use '0' for unlimited.
+        default: 0
         type: int
     app:
         description:
@@ -61,6 +63,7 @@ options:
         description:
             - The max disk space in MB that can be used by a user's search jobs.
         type: int
+        default: 100
     filter:
         description:
             - Search string that restricts the scope of searches run by this role.
@@ -83,11 +86,13 @@ options:
         description:
             - Number of real-time searches the user is limited to.
             - Use '0' for unlimited.
+        default: 6
         type: int
     user_total_limit:
         description:
             - Number of searches the user is limited to.
             - Use '0' for unlimited.
+        default: 3
         type: int
     time_limit:
         description:
@@ -294,10 +299,12 @@ def main():
             elements='str'
         ),
         role_realtime_limit=dict(
-            type='int'
+            type='int',
+            default=0
         ),
         role_total_limit=dict(
-            type='int'
+            type='int',
+            default=0
         ),
         app=dict(
             type='str'
@@ -311,7 +318,8 @@ def main():
             required=True
         ),
         disk_quota=dict(
-            type='int'
+            type='int',
+            default=100
         ),
         filter=dict(
             type='str'
@@ -325,10 +333,12 @@ def main():
             elements='str'
         ),
         user_realtime_limit=dict(
-            type='int'
+            type='int',
+            default=6
         ),
         user_total_limit=dict(
-            type='int'
+            type='int',
+            default=3
         ),
         time_limit=dict(
             type='str'
@@ -351,12 +361,15 @@ def main():
     ]
     module = AnsibleModule(
         argument_spec=argument_spec,
-        mutually_exclusive=exclusive_args,
-        required_one_of=required_args,
-        required_if=required_if,
         supports_check_mode=False
     )
-
+    # module = AnsibleModule(
+    #     argument_spec=argument_spec,
+    #     mutually_exclusive=exclusive_args,
+    #     required_one_of=required_args,
+    #     required_if=required_if,
+    #     supports_check_mode=False
+    # )
     role = SplunkRole(module)
     existing_role = role.role_exists(module.params['name'])
     state = module.params['state']
@@ -398,23 +411,25 @@ def main():
 
     # Validate search limits
     for i in ['user_total_limit', 'user_realtime_limit', 'role_total_limit', 'role_realtime_limit']:
-        if module.params[i] < 0:
+        if module.params[i] and module.params[i] < 0:
             module.fail_json(
                 msg=f"The value of '{i}' must be either 0 (for unlimited) or a posative number.")
 
     # Validate Inherited Roles
     imported_roles = module.params['imported_roles']
-    for trole in imported_roles:
-        if not role.valid_role(trole):
-            module.fail_json(
-                msg=f"The '{trole}' role is not available for inheritance.")
+    if imported_roles:
+        for trole in imported_roles:
+            if not role.valid_role(trole):
+                module.fail_json(
+                    msg=f"The '{trole}' role is not available for inheritance.")
 
     # Validate capabilities
     capabilities = module.params['capabilities']
-    for capability in capabilities:
-        if not role.valid_capability(capability):
-            module.fail_json(
-                msg=f"The '{capability}' capability is not available for assignment.")
+    if capabilities:
+        for capability in capabilities:
+            if not role.valid_capability(capability):
+                module.fail_json(
+                    msg=f"The '{capability}' capability is not available for assignment.")
 
     # Modify or Create Role
     if not existing_role:
