@@ -1,0 +1,16 @@
+---
+all:
+  hosts:
+    splunk_fixture:
+      ansible_host: ssh-must-not-be-used.invalid
+      ansible_connection: ssh
+      splunk_url: "{{ fixture_url }}"
+      splunk_ca_path: "{{ fixture_ca }}"
+      splunk_token: "{{ fixture_token }}"
+    localhost:
+      ansible_connection: local
+      ansible_python_interpreter: "{{ ansible_playbook_python }}"
+      splunk_home: "{{ fixture_splunk_home }}"
+      splunk_url: "{{ fixture_url }}"
+      splunk_ca_path: "{{ fixture_ca }}"
+      splunk_token: "{{ fixture_token }}"

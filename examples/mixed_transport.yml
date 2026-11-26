@@ -1,0 +1,20 @@
+---
+- name: Check the Splunk management API and service
+  hosts: splunk_standalone
+  gather_facts: false
+  tasks:
+    - name: Read Splunk server information
+      pyrodie18.splunk.server_info:
+      register: splunk_info
+
+    - name: Read Splunk service information
+      pyrodie18.splunk.service_info:
+      register: splunk_service
+
+    - name: Report API version and service status
+      ansible.builtin.debug:
+        msg:
+          server: "{{ splunk_info.server_name }}"
+          api_version: "{{ splunk_info.version }}"
+          cli_version: "{{ splunk_service.version }}"
+          service_status: "{{ splunk_service.status }}"

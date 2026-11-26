@@ -1,0 +1,97 @@
+---
+- name: Exercise the Splunk REST module without an SSH connection
+  hosts: splunk_fixture
+  gather_facts: false
+  tasks:
+    - name: Read Splunk identity using a bearer token
+      pyrodie18.splunk.server_info:
+      register: bearer_result
+
+    - name: Read Splunk identity using Basic auth in check mode
+      pyrodie18.splunk.server_info:
+        username: fixture
+        password: "{{ fixture_password }}"
+      delegate_to: localhost
+      check_mode: true
+      register: basic_result
+
+    - name: Verify results
+      ansible.builtin.assert:
+        that:
+          - bearer_result is not changed
+          - basic_result is not changed
+          - bearer_result.server_name == 'splunk-fixture'
+          - bearer_result.guid == 'fixture-guid'
+          - bearer_result.version == '10.2.2'
+          - bearer_result.build == 'fixture-build'
+          - bearer_result.roles == ['indexer', 'kv_store']
+          - basic_result.server_name == bearer_result.server_name
+          - basic_result.roles == bearer_result.roles
+
+    - name: Test TLS verification without the fixture CA
+      pyrodie18.splunk.server_info:
+        token: "{{ fixture_token }}"
+        ca_path: null
+      register: tls_result
+      ignore_errors: true
+
+    - name: Verify the untrusted certificate was rejected
+      ansible.builtin.assert:
+        that:
+          - tls_result is failed
+          - "'TLS verification' in tls_result.msg"
+
+    - name: Exercise management API failures
+      pyrodie18.splunk.server_info:
+        token: "fixture-{{ item.scenario }}-token"
+        timeout: 1
+      loop_control:
+        label: "{{ item.message }}"
+      loop:
+        - scenario: redirect
+          message: redirect rejected
+          status: 302
+        - scenario: bad
+          message: authentication failed
+          status: 401
+        - scenario: forbidden
+          message: permission denied
+          status: 403
+        - scenario: malformed
+          message: invalid JSON
+        - scenario: timeout
+          message: request timed out
+      register: failure_results
+      ignore_errors: true
+
+    - name: Verify management API errors
+      ansible.builtin.assert:
+        that:
+          - item is failed
+          - item.item.message in item.msg
+          - item.status | default(0) == item.item.status | default(0)
+      loop: "{{ failure_results.results }}"
+      loop_control:
+        label: "{{ item.item.message }}"
+
+- name: Exercise both modules with the same inventory host
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Read the API version
+      pyrodie18.splunk.server_info:
+      register: mixed_api
+
+    - name: Read the CLI service information
+      pyrodie18.splunk.service_info:
+      check_mode: true
+      register: mixed_service
+
+    - name: Verify both connections and unchanged results
+      ansible.builtin.assert:
+        that:
+          - mixed_api is not changed
+          - mixed_service is not changed
+          - mixed_api.version == '10.2.2'
+          - mixed_api.version in mixed_service.version
+          - mixed_service.status == 'splunkd is running (PID 42).'

@@ -1,0 +1,17 @@
+---
+- name: Check Splunk over SSH
+  hosts: splunk_standalone
+  gather_facts: false
+  tasks:
+    - name: Verify SSH and Python connectivity
+      ansible.builtin.ping:
+
+    - name: Read Splunk CLI version and service status
+      pyrodie18.splunk.service_info:
+      register: splunk_cli
+
+    - name: Report Splunk CLI version and service status
+      ansible.builtin.debug:
+        msg:
+          version: "{{ splunk_cli.version }}"
+          status: "{{ splunk_cli.status }}"

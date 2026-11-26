@@ -1,0 +1,31 @@
+---
+- name: Check the Splunk management API
+  hosts: splunk_standalone
+  gather_facts: false
+  tasks:
+    - name: Read Splunk server identity and roles
+      pyrodie18.splunk.server_info:
+      register: splunk_info
+
+    - name: Report Splunk server information and roles
+      ansible.builtin.debug:
+        msg:
+          server_name: "{{ splunk_info.server_name }}"
+          guid: "{{ splunk_info.guid }}"
+          version: "{{ splunk_info.version }}"
+          build: "{{ splunk_info.build }}"
+          roles: "{{ splunk_info.roles }}"
+          activeLicenseGroup: "{{ splunk_info.activeLicenseGroup | default(none) }}"
+          cpu_arch: "{{ splunk_info.cpu_arch | default(none) }}"
+          host: "{{ splunk_info.host | default(none) }}"
+          host_fqdn: "{{ splunk_info.host_fqdn | default(none) }}"
+          mode: "{{ splunk_info.mode | default(none) }}"
+          numberOfCores: "{{ splunk_info.numberOfCores | default(none) }}"
+          os_build: "{{ splunk_info.os_build | default(none) }}"
+          os_name: "{{ splunk_info.os_name | default(none) }}"
+          os_version: "{{ splunk_info.os_version | default(none) }}"
+          physicalMemoryMB: "{{ splunk_info.physicalMemoryMB | default(none) }}"
+          fips_mode: "{{ splunk_info.fips_mode | default(none) }}"
+          health_info: "{{ splunk_info.health_info | default(none) }}"
+          numberOfVirtualCores: "{{ splunk_info.numberOfVirtualCores | default(none) }}"
+          startup_time: "{{ splunk_info.startup_time | default(none) }}"

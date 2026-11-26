@@ -1,0 +1,15 @@
+---
+all:
+  children:
+    splunk_standalone:
+      hosts:
+        splunk_example:
+          ansible_host: splunk.example.com
+          ansible_connection: ssh
+          ansible_user: automation
+          ansible_python_interpreter: /usr/bin/python3
+          ansible_become: true
+          ansible_become_user: splunk
+          splunk_url: https://splunk.example.com:8089
+          splunk_validate_certs: true
+          splunk_home: /opt/splunk

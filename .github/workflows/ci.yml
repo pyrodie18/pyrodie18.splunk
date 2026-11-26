@@ -1,0 +1,54 @@
+---
+name: Collection CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: ansible_collections/pyrodie18/splunk
+    steps:
+      - name: Check out the collection at its FQCN path
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: ansible_collections/pyrodie18/splunk
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.8.15"
+          enable-cache: false
+      - name: Verify and install locked dependencies
+        run: |
+          uv lock --check
+          python3 .devcontainer/bootstrap-dependencies.py
+      - name: Lint Python
+        run: uv run --frozen ruff check plugins tests
+      - name: Run Ansible sanity tests
+        run: uv run --frozen ansible-test sanity --docker
+      - name: Run Ansible unit tests
+        run: uv run --frozen ansible-test units --docker --python 3.12
+      - name: Exercise the server_info module against the HTTPS fixture
+        run: uv run --frozen ansible-test integration server_info --local --python 3.12
+      - name: Verify documentation from the installed Galaxy artifact
+        run: |
+          build_dir=$(mktemp -d)
+          uv run --frozen ansible-galaxy collection build --output-path "$build_dir"
+          export ANSIBLE_COLLECTIONS_PATH="$build_dir/install"
+          uv run --frozen ansible-galaxy collection install "$build_dir"/*.tar.gz -p "$ANSIBLE_COLLECTIONS_PATH"
+          uv run --frozen ansible-doc --json pyrodie18.splunk.server_info |
+            python3 -c 'import json, sys; sys.exit("Installed server_info documentation was not found" if "pyrodie18.splunk.server_info" not in json.load(sys.stdin) else 0)'
