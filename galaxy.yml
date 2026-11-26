@@ -1,0 +1,35 @@
+namespace: pyrodie18
+name: splunk
+version: 0.1.0
+readme: README.md
+authors:
+  - pyrodie18
+description: Ansible collection for Splunk automation.
+license: []
+tags:
+  - splunk
+dependencies: {}
+build_ignore:
+  - .agents
+  - .aws
+  - .cache
+  - .devcontainer
+  - .codex
+  - .env*
+  - .github
+  - .pytest_cache
+  - .ruff_cache
+  - .venv
+  - .vscode
+  - .git
+  - .gitignore
+  - "*.local.yml"
+  - "*.local.md"
+  - AGENTS.md
+  - PLAN.md
+  - "PLAN-*.md"
+  - "PLAN.*.md"
+  - tests/integration/inventory
+  - tests/output
+  - uv.lock
+  - pyproject.toml

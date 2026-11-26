@@ -1,0 +1,39 @@
+{
+  "name": "pyrodie18.splunk",
+  "image": "ghcr.io/pyrodie18/ansible-dev:2026.08.01.1@sha256:809842b075b72df2ac1e93313909e8950e31349b52039cb0d2eda88066ac889e",
+  "remoteUser": "vscode",
+  "runArgs": [
+    "--security-opt",
+    "seccomp=unconfined"
+  ],
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/ansible_collections/pyrodie18/splunk,type=bind",
+  "workspaceFolder": "/workspace/ansible_collections/pyrodie18/splunk",
+  "containerEnv": {
+    "CODEX_HOME": "/home/vscode/.codex",
+    "ANSIBLE_COLLECTIONS_PATH": "/workspace:/home/vscode/.ansible/collections",
+    "SSH_AUTH_SOCK": "/tmp/codex-dev-ssh-agent.sock"
+  },
+  "initializeCommand": "${localEnv:HOME}/devel/dev-environments/scripts/ensure-ssh-agent && install -d -m 0700 -o 1000 -g 1000 ${localEnv:HOME}/.local/state/codex-dev/pyrodie18-splunk",
+  "mounts": [
+    "type=bind,source=${localEnv:HOME}/.local/state/codex-dev/pyrodie18-splunk,target=/home/vscode/.codex",
+    "type=bind,source=/run/codex-dev-ssh-agent-1000/agent.sock,target=/tmp/codex-dev-ssh-agent.sock",
+    "type=volume,source=pyrodie18-splunk-uv-cache,target=/home/vscode/.cache/uv",
+    "type=volume,source=pyrodie18-splunk-ansible-cache,target=/home/vscode/.ansible"
+  ],
+  "postCreateCommand": "bootstrap-codex-home pyrodie18-splunk && python3 .devcontainer/bootstrap-dependencies.py",
+  "postStartCommand": "setup-codex-project pyrodie18-splunk",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "redhat.ansible",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "openai.chatgpt"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python"
+      }
+    }
+  }
+}

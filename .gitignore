@@ -1,0 +1,26 @@
+# Local planning and workspace configuration
+/PLAN.md
+/PLAN-*.md
+/PLAN.*.md
+*.local.md
+/.agents/
+/.aws/
+/.codex/
+/.vscode/
+
+.venv/
+__pycache__/
+*.py[cod]
+.ansible/
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env
+.env.*
+!.env.example
+*.retry
+*.tar.gz
+*.local.yml
+tests/integration/inventory
+tests/output/
