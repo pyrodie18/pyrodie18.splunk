@@ -1,0 +1,11 @@
+---
+hide_password: true
+splunk:
+  conf:
+    - key: server
+      value:
+        content:
+          sslConfig:
+            serverCert: /opt/splunk-ci/server.pem
+            sslRootCAPath: /opt/splunk-ci/ca.pem
+            sslPassword: ''

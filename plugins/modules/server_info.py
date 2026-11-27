@@ -10,7 +10,8 @@ short_description: Read Splunk Enterprise server identity and roles
 version_added: "0.1.0"
 description:
   - Read the identity and roles of a Splunk Enterprise server through its management API.
-  - The credential must be allowed to read C(/services/server/info) and C(/services/server/roles).
+  - The credential must be allowed to read C(/services/server/info). If that response omits server roles,
+    the credential must also be allowed to read C(/services/server/roles).
   - The action plugin contacts the management API from the controller or execution environment.
   - Set connection defaults in inventory as C(splunk_url), C(splunk_validate_certs), C(splunk_ca_path), and C(splunk_timeout).
   - Supply authentication as task arguments, in inventory, or through the corresponding C(SPLUNK_API_*) environment variables.

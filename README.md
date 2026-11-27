@@ -1,6 +1,6 @@
 # pyrodie18.splunk
 
-Ansible collection for Splunk Enterprise administration. `pyrodie18.splunk.server_info` reads the management API, and `pyrodie18.splunk.service_info` reads the service status on the host. The first live test target is Splunk Enterprise 10.2.2.
+Ansible collection for Splunk Enterprise administration. `pyrodie18.splunk.server_info` reads the management API, and `pyrodie18.splunk.service_info` reads the service status on the host.
 
 ## Open the development environment
 
@@ -18,11 +18,28 @@ uv lock --check
 uv run --frozen ruff check plugins tests
 uv run --frozen ansible-test sanity --docker
 uv run --frozen ansible-test units --docker --python 3.12
-uv run --frozen ansible-test integration server_info --local --python 3.12
+uv run --frozen ansible-test integration --local --python 3.12
 uv run --frozen ansible-galaxy collection build --output-path "$(mktemp -d)"
 ```
 
-The Docker sanity and unit commands require Docker or Podman. The integration target starts a temporary local HTTPS server and runs without Splunk credentials. GitHub Actions runs these checks on pull requests and pushes to `main`. Choose a collection distribution license before publishing a release.
+The Docker sanity and unit commands require Docker or Podman. The fixture integration suite starts a temporary local HTTPS server and runs without Splunk credentials.
+
+## Pull requests and required checks
+
+Run `codex review --base main` from your feature branch after committing the change, or request `@codex review` on the PR when the GitHub integration is connected. Request a focused second review for authentication, TLS, privilege escalation, release automation, or changes that write to Splunk. Review findings inform the maintainer's merge decision.
+
+GitHub Actions runs [Collection CI](.github/workflows/ci.yml) on PRs to `main` and pushes to `main`. It runs the fixture suite and starts a fresh Splunk Enterprise container for each pinned version in the 10.0, 10.2, 10.4, and 10.6 lines. Each live job runs the same HTTPS and SSH tests in normal and check mode. The **Collection CI required** job passes only when the fixture checks, artifact verification, and every Splunk version pass.
+
+After accepting the [Splunk General Terms](https://www.splunk.com/en_us/legal/splunk-general-terms.html) and the license terms, set the repository Actions variable `SPLUNK_CI_ACCEPT_TERMS` to `true`. Once the workflow has a successful PR run, configure the `main` ruleset to require pull requests and the **Collection CI required** check from GitHub Actions. To verify enforcement, temporarily fail one live assertion on a test PR, confirm the other versions finish and merge is blocked, then revert the assertion and confirm the required check passes.
+
+To reproduce one live job, run the following from the collection root on a Linux x86-64 environment with a local Docker daemon, OpenSSL, and OpenSSH client tools. Copy the desired version and full image reference from the workflow matrix. Set the acceptance variable locally after accepting the same terms.
+
+```sh
+SPLUNK_CI_ACCEPT_TERMS=true uv run --frozen python tests/integration/live/run.py \
+  10.2.10 splunk/splunk:10.2.10-rhel9@sha256:897dde2b96167e34c9152ea8175442235ae5e22260c2f7e558116828963b0d61
+```
+
+Update image pins in a PR with the full suite passing. Choose a collection distribution license and start a user-facing changelog before publishing to Galaxy.
 
 ## Live smoke tests
 

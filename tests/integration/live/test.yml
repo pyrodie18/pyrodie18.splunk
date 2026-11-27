@@ -1,0 +1,56 @@
+---
+- name: Read Splunk from the controller with SSH unavailable
+  hosts: api_only
+  gather_facts: false
+  tasks:
+    - name: Read server information using Basic authentication
+      pyrodie18.splunk.server_info:
+      register: basic_result
+
+    - name: Read server information using bearer authentication
+      pyrodie18.splunk.server_info:
+        token: "{{ live_token }}"
+      register: bearer_result
+
+    - name: Verify server identity and read-only results
+      ansible.builtin.assert:
+        that:
+          - basic_result is not changed
+          - bearer_result is not changed
+          - basic_result.version == expected_version
+          - basic_result.server_name | length > 0
+          - basic_result.guid | length > 0
+          - basic_result.build | length > 0
+          - "'indexer' in basic_result.roles"
+          - bearer_result.version == basic_result.version
+          - bearer_result.guid == basic_result.guid
+          - bearer_result.roles == basic_result.roles
+
+- name: Run API and CLI modules against the same Splunk inventory host
+  hosts: splunk_container
+  gather_facts: false
+  tasks:
+    - name: Confirm the SSH user is the Splunk service account
+      ansible.builtin.command:
+        argv: [id, -un]
+      check_mode: false
+      changed_when: false
+      register: ssh_account
+
+    - name: Read server information over the management API
+      pyrodie18.splunk.server_info:
+      register: server_info
+
+    - name: Read service information over SSH
+      pyrodie18.splunk.service_info:
+      register: service_info
+
+    - name: Verify the running service and read-only results
+      ansible.builtin.assert:
+        that:
+          - ssh_account.stdout == 'splunk'
+          - server_info is not changed
+          - service_info is not changed
+          - server_info.version == expected_version
+          - service_info.version.split()[1] == expected_version
+          - "'splunkd is running' in service_info.status"

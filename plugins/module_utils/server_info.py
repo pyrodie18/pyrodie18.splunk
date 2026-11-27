@@ -53,9 +53,13 @@ def read_server_info(client):
     if any(not isinstance(value, str) or not value for value in identity.values()):
         raise SplunkError(f'{INFO_ENDPOINT}: missing or invalid server identity fields')
 
-    role_content = single_entry_content(client.get_json(ROLES_ENDPOINT), ROLES_ENDPOINT)
-    roles = role_content.get('role_list')
+    role_source = INFO_ENDPOINT
+    if 'server_roles' in info:
+        roles = info['server_roles']
+    else:
+        role_source = ROLES_ENDPOINT
+        roles = single_entry_content(client.get_json(role_source), role_source).get('role_list')
     if not isinstance(roles, list) or any(not isinstance(role, str) or not role for role in roles):
-        raise SplunkError(f'{ROLES_ENDPOINT}: expected a list of role names')
+        raise SplunkError(f'{role_source}: expected a list of role names')
     identity.update({field: info[field] for field in ADDITIONAL_INFO_FIELDS if field in info})
     return dict(identity, roles=sorted(set(roles)))
