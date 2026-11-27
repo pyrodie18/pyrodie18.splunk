@@ -7,21 +7,6 @@ from ansible_collections.pyrodie18.splunk.plugins.module_utils.client import (
     single_entry_content,
 )
 
-ARGUMENT_SPEC = {
-    'url': {'type': 'str', 'no_log': True},
-    'token': {'type': 'str', 'no_log': True},
-    'username': {'type': 'str'},
-    'password': {'type': 'str', 'no_log': True},
-    'validate_certs': {'type': 'bool', 'default': True},
-    'ca_path': {'type': 'path'},
-    'timeout': {'type': 'int', 'default': 10},
-}
-AUTH_CONSTRAINTS = {
-    'required_one_of': [('token', 'username')],
-    'required_together': [('username', 'password')],
-    'mutually_exclusive': [('token', 'username')],
-}
-
 INFO_ENDPOINT = '/services/server/info'
 ROLES_ENDPOINT = '/services/server/roles'
 ADDITIONAL_INFO_FIELDS = (

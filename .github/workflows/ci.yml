@@ -55,13 +55,17 @@ jobs:
           uv run --frozen ansible-galaxy collection install "$build_dir"/*.tar.gz -p "$ANSIBLE_COLLECTIONS_PATH"
           cd "$build_dir"
           "$ansible_doc" --json \
+            pyrodie18.splunk.index pyrodie18.splunk.index_info \
             pyrodie18.splunk.server_info pyrodie18.splunk.service_info > docs.json
           python3 - <<'PY'
           import json
           from pathlib import Path
 
           docs = json.loads(Path('docs.json').read_text())
-          expected = {'pyrodie18.splunk.server_info', 'pyrodie18.splunk.service_info'}
+          expected = {
+              'pyrodie18.splunk.index', 'pyrodie18.splunk.index_info',
+              'pyrodie18.splunk.server_info', 'pyrodie18.splunk.service_info',
+          }
           missing = expected - docs.keys()
           if missing:
               raise SystemExit(f'Missing installed module documentation: {", ".join(sorted(missing))}')

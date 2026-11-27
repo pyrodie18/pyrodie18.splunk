@@ -1,6 +1,6 @@
 # pyrodie18.splunk
 
-Ansible collection for Splunk Enterprise administration. `pyrodie18.splunk.server_info` reads the management API, and `pyrodie18.splunk.service_info` reads the service status on the host.
+Ansible collection for Splunk Enterprise administration. `pyrodie18.splunk.server_info` reads the management API, and `pyrodie18.splunk.service_info` reads the service status on the host. Use `pyrodie18.splunk.index_info` to inspect indexes and `pyrodie18.splunk.index` to create or update standalone event indexes.
 
 ## Open the development environment
 
@@ -41,7 +41,18 @@ SPLUNK_CI_ACCEPT_TERMS=true uv run --frozen python tests/integration/live/run.py
 
 Update image pins in a PR with the full suite passing. Choose a collection distribution license and start a user-facing changelog before publishing to Galaxy.
 
-The live suite uses separate `ansible-test` targets for `live_server_info`, `live_service_info`, and `live_mixed_transport`. All three share the container and temporary inventory for a matrix job. Append `--target live_server_info` to the command above to run just that target. New live targets belong under `tests/integration/targets/` with the `splunk_live` alias so CI discovers them automatically.
+The live suite uses separate `ansible-test` targets for `live_server_info`, `live_service_info`, `live_mixed_transport`, and `live_index`. They share the container and temporary inventory for a matrix job. Append `--target live_index` to the command above to run the standalone index lifecycle. New live targets belong under `tests/integration/targets/` with the `splunk_live` alias so CI discovers them automatically.
+
+## Standalone indexes
+
+[The index example](examples/index.yml) creates or updates an event index and reads it back from Splunk. Set the same inventory and authentication options as for `server_info`. The credential used for writes needs read access to the indexer cluster configuration and read and write access to the indexes endpoint.
+
+```sh
+uv run --frozen ansible-playbook -i examples/splunk.local.yml examples/index.yml --check --diff
+uv run --frozen ansible-playbook -i examples/splunk.local.yml examples/index.yml
+```
+
+Specify `retention_seconds` and `max_total_size_mb` as needed. Splunk supplies defaults on creation, and existing values are preserved when those options are omitted on update. Reducing either limit can freeze existing data. Splunk deletes frozen data by default unless archiving is configured. [Splunk retention and archiving documentation](https://help.splunk.com/en/splunk-enterprise/administer/manage-indexers-and-indexer-clusters/9.2/back-up-and-archive-your-indexes/set-a-retirement-and-archiving-policy)
 
 ## Live smoke tests
 
