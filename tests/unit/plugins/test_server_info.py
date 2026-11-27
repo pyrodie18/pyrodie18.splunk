@@ -74,6 +74,23 @@ def test_allowlist_identity_and_normalize_roles(additional_info):
     assert [call.args[0] for call in client.get_json.call_args_list] == [INFO_ENDPOINT, ROLES_ENDPOINT]
 
 
+@pytest.mark.parametrize(('server_roles', 'expected'), [
+    (['search_head', 'indexer', 'indexer'], ['indexer', 'search_head']),
+    ([], []),
+])
+def test_read_roles_from_server_info(server_roles, expected):
+    client = Mock()
+    client.get_json.return_value = {'entry': [{'content': {
+        'serverName': 'splunk-fixture',
+        'guid': 'fixture-guid',
+        'version': '10.2.10',
+        'build': 'test-build',
+        'server_roles': server_roles,
+    }}]}
+    assert read_server_info(client)['roles'] == expected
+    client.get_json.assert_called_once_with(INFO_ENDPOINT)
+
+
 @pytest.mark.parametrize('document', [None, {}, {'entry': []}, {'entry': [{'content': []}]}])
 def test_fail_on_invalid_entry(document):
     client = Mock()

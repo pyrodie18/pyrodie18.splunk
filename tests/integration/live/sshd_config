@@ -1,0 +1,11 @@
+Port 22
+HostKey /opt/splunk-ci/ssh_host_ed25519_key
+AuthorizedKeysFile /opt/splunk-ci/authorized_keys
+AllowUsers splunk
+AuthenticationMethods publickey
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+UsePAM yes
+DisableForwarding yes
+Subsystem sftp internal-sftp

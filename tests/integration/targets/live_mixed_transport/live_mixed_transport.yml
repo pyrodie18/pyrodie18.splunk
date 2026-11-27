@@ -1,0 +1,20 @@
+---
+- name: Run the API and CLI modules against the same inventory host
+  hosts: splunk_container
+  gather_facts: false
+  tasks:
+    - name: Read server information over the management API
+      pyrodie18.splunk.server_info:
+      register: server_info
+
+    - name: Read service information over SSH
+      pyrodie18.splunk.service_info:
+      register: service_info
+
+    - name: Verify both transports report the same version without changes
+      ansible.builtin.assert:
+        that:
+          - server_info is not changed
+          - service_info is not changed
+          - server_info.version == expected_version
+          - server_info.version == service_info.version.split()[1]

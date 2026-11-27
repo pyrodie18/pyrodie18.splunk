@@ -3,6 +3,7 @@ name: Collection CI
 
 on:
   pull_request:
+    branches: [main]
   push:
     branches: [main]
 
@@ -42,13 +43,83 @@ jobs:
         run: uv run --frozen ansible-test sanity --docker
       - name: Run Ansible unit tests
         run: uv run --frozen ansible-test units --docker --python 3.12
-      - name: Exercise the server_info module against the HTTPS fixture
-        run: uv run --frozen ansible-test integration server_info --local --python 3.12
+      - name: Run all fixture integration targets
+        run: uv run --frozen ansible-test integration splunk_fixture/ --local --python 3.12
       - name: Verify documentation from the installed Galaxy artifact
         run: |
           build_dir=$(mktemp -d)
+          ansible_doc="$PWD/.venv/bin/ansible-doc"
+          trap 'rm -rf "$build_dir"' EXIT
           uv run --frozen ansible-galaxy collection build --output-path "$build_dir"
           export ANSIBLE_COLLECTIONS_PATH="$build_dir/install"
           uv run --frozen ansible-galaxy collection install "$build_dir"/*.tar.gz -p "$ANSIBLE_COLLECTIONS_PATH"
-          uv run --frozen ansible-doc --json pyrodie18.splunk.server_info |
-            python3 -c 'import json, sys; sys.exit("Installed server_info documentation was not found" if "pyrodie18.splunk.server_info" not in json.load(sys.stdin) else 0)'
+          cd "$build_dir"
+          "$ansible_doc" --json \
+            pyrodie18.splunk.server_info pyrodie18.splunk.service_info > docs.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          docs = json.loads(Path('docs.json').read_text())
+          expected = {'pyrodie18.splunk.server_info', 'pyrodie18.splunk.service_info'}
+          missing = expected - docs.keys()
+          if missing:
+              raise SystemExit(f'Missing installed module documentation: {", ".join(sorted(missing))}')
+          PY
+
+  splunk-integration:
+    name: Splunk ${{ matrix.version }} integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: 10.0.13
+            digest: sha256:1d46bf3b6e8b9d80f2d54252574a52993ab030902caec22325406bc1c87b0d4b
+          - version: 10.2.10
+            digest: sha256:897dde2b96167e34c9152ea8175442235ae5e22260c2f7e558116828963b0d61
+          - version: 10.4.6
+            digest: sha256:043fd010054dc93cafe4ce14516a56e7de4d01601a2aed3a64984b6ae71ce9c2
+          - version: 10.6.2
+            digest: sha256:e670efd38e5f4614804f54afab585e0e300d35a17d7a9573dc67361a64f9c5e6
+    defaults:
+      run:
+        shell: bash
+        working-directory: ansible_collections/pyrodie18/splunk
+    steps:
+      - name: Check out the collection at its FQCN path
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: ansible_collections/pyrodie18/splunk
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.8.15"
+          enable-cache: false
+      - name: Run live HTTPS and SSH integration tests
+        env:
+          SPLUNK_CI_ACCEPT_TERMS: ${{ vars.SPLUNK_CI_ACCEPT_TERMS }}
+          SPLUNK_CI_IMAGE: splunk/splunk:${{ matrix.version }}-rhel9@${{ matrix.digest }}
+          SPLUNK_CI_VERSION: ${{ matrix.version }}
+        run: uv run --frozen python tests/integration/live/run.py "$SPLUNK_CI_VERSION" "$SPLUNK_CI_IMAGE"
+
+  required:
+    name: Collection CI required
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    if: ${{ always() }}
+    needs: [checks, splunk-integration]
+    steps:
+      - name: Require success from every check
+        env:
+          CHECKS_RESULT: ${{ needs.checks.result }}
+          SPLUNK_RESULT: ${{ needs.splunk-integration.result }}
+        run: |
+          printf 'Collection checks: %s\nSplunk integration matrix: %s\n' "$CHECKS_RESULT" "$SPLUNK_RESULT"
+          [[ "$CHECKS_RESULT" == success && "$SPLUNK_RESULT" == success ]]

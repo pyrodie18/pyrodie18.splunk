@@ -1,0 +1,28 @@
+---
+- name: Read Splunk from the controller with SSH unavailable
+  hosts: api_only
+  gather_facts: false
+  tasks:
+    - name: Read server information using Basic authentication
+      pyrodie18.splunk.server_info:
+      register: basic_result
+
+    - name: Read server information using bearer authentication
+      pyrodie18.splunk.server_info:
+        token: "{{ live_token }}"
+      register: bearer_result
+
+    - name: Verify server identity and read-only results
+      ansible.builtin.assert:
+        fail_msg: "Expected Splunk {{ expected_version }}. Basic reported {{ basic_result.version }} and bearer reported {{ bearer_result.version }}."
+        that:
+          - basic_result is not changed
+          - bearer_result is not changed
+          - basic_result.version == expected_version
+          - basic_result.server_name | length > 0
+          - basic_result.guid | length > 0
+          - basic_result.build | length > 0
+          - "'indexer' in basic_result.roles"
+          - bearer_result.version == basic_result.version
+          - bearer_result.guid == basic_result.guid
+          - bearer_result.roles == basic_result.roles
