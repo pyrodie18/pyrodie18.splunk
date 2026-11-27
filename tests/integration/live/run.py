@@ -212,6 +212,14 @@ def run_integration(version, base_image, directory):
             ['docker', 'build', '--platform', 'linux/amd64',
              '--build-arg', f'SPLUNK_IMAGE={base_image}', '--tag', image, str(LIVE_DIR)], check=True,
         )
+        image_version = subprocess.check_output(
+            ['docker', 'image', 'inspect', '--format', '{{ index .Config.Labels "version" }}', image],
+            text=True,
+        ).strip()
+        # Splunk can publish a four-part product version under a three-part tag.
+        if not re.fullmatch(rf'{re.escape(version)}(?:\.\d+)?', image_version):
+            raise RuntimeError(f'Splunk image version {image_version!r} does not match the {version} tag')
+        print(f'Testing Splunk {image_version} from the {version} image tag', flush=True)
         container = subprocess.check_output(
             ['docker', 'create', '--name', name, '--hostname', 'splunk-ci',
              '--publish', '127.0.0.1::8089', '--publish', '127.0.0.1::22',
@@ -253,7 +261,7 @@ def run_integration(version, base_image, directory):
         if not isinstance(token, str) or not token:
             raise RuntimeError('Splunk did not return a bearer token')
         credentials.append(token)
-        run_playbook(directory, version, origin, port, ssh_options, password, token, redact)
+        run_playbook(directory, image_version, origin, port, ssh_options, password, token, redact)
     except (OSError, RuntimeError, ValueError, LookupError, subprocess.SubprocessError) as error:
         print(redact(str(error)), file=sys.stderr)
         if container:

@@ -14,6 +14,7 @@
 
     - name: Verify server identity and read-only results
       ansible.builtin.assert:
+        fail_msg: "Expected Splunk {{ expected_version }}. Basic reported {{ basic_result.version }} and bearer reported {{ bearer_result.version }}."
         that:
           - basic_result is not changed
           - bearer_result is not changed
@@ -47,6 +48,7 @@
 
     - name: Verify the running service and read-only results
       ansible.builtin.assert:
+        fail_msg: "Expected Splunk {{ expected_version }}. API reported {{ server_info.version }} and CLI reported {{ service_info.version }}."
         that:
           - ssh_account.stdout == 'splunk'
           - server_info is not changed
