@@ -1,0 +1,19 @@
+---
+- name: Manage an application event index
+  hosts: splunk_standalone
+  gather_facts: false
+  tasks:
+    - name: Ensure the application event index exists
+      pyrodie18.splunk.index:
+        name: application_events
+        retention_seconds: 2592000
+        max_total_size_mb: 10000
+
+    - name: Read the current index settings
+      pyrodie18.splunk.index_info:
+        name: application_events
+      register: application_index
+
+    - name: Show the current settings
+      ansible.builtin.debug:
+        var: application_index.indexes

@@ -1,0 +1,98 @@
+---
+- name: Manage an event index on a disposable standalone server
+  hosts: api_only
+  gather_facts: false
+  vars:
+    index_name: ansible_ci_events
+    initial_retention: 86400
+    updated_retention: 172800
+    index_size: 500
+  tasks:
+    - name: Predict index creation
+      pyrodie18.splunk.index:
+        name: "{{ index_name }}"
+        retention_seconds: "{{ initial_retention }}"
+        max_total_size_mb: "{{ index_size }}"
+      check_mode: true
+      diff: true
+      register: create_preview
+
+    - name: Read the index after check mode
+      pyrodie18.splunk.index_info:
+        name: "{{ index_name }}"
+      register: before_create
+
+    - name: Verify index creation was predicted without writing
+      ansible.builtin.assert:
+        that:
+          - create_preview is changed
+          - create_preview.diff.before == {}
+          - create_preview.diff.after.retention_seconds == initial_retention
+          - before_create is not changed
+          - before_create.indexes == []
+
+    - name: Create the index
+      pyrodie18.splunk.index:
+        name: "{{ index_name }}"
+        retention_seconds: "{{ initial_retention }}"
+        max_total_size_mb: "{{ index_size }}"
+      register: created
+
+    - name: Read the created index
+      pyrodie18.splunk.index_info:
+        name: "{{ index_name }}"
+      register: after_create
+
+    - name: Predict a retention update
+      pyrodie18.splunk.index:
+        name: "{{ index_name }}"
+        retention_seconds: "{{ updated_retention }}"
+      check_mode: true
+      diff: true
+      register: update_preview
+
+    - name: Read the index after the update preview
+      pyrodie18.splunk.index_info:
+        name: "{{ index_name }}"
+      register: before_update
+
+    - name: Verify the stored and predicted settings
+      ansible.builtin.assert:
+        that:
+          - created is changed
+          - after_create.indexes == [created.index]
+          - created.index.datatype == 'event'
+          - created.index.retention_seconds == initial_retention
+          - created.index.max_total_size_mb == index_size
+          - update_preview is changed
+          - update_preview.diff.before == created.index
+          - update_preview.diff.after.retention_seconds == updated_retention
+          - before_update.indexes == after_create.indexes
+
+    - name: Apply the retention update
+      pyrodie18.splunk.index:
+        name: "{{ index_name }}"
+        retention_seconds: "{{ updated_retention }}"
+      register: updated
+
+    - name: Repeat the retention update
+      pyrodie18.splunk.index:
+        name: "{{ index_name }}"
+        retention_seconds: "{{ updated_retention }}"
+      register: repeated
+
+    - name: List indexes visible to the credential in check mode
+      pyrodie18.splunk.index_info:
+      check_mode: true
+      register: listed
+
+    - name: Verify the update preserved the size and converged
+      ansible.builtin.assert:
+        that:
+          - updated is changed
+          - updated.index.retention_seconds == updated_retention
+          - updated.index.max_total_size_mb == index_size
+          - repeated is not changed
+          - repeated.index == updated.index
+          - listed is not changed
+          - updated.index in listed.indexes

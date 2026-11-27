@@ -74,6 +74,80 @@
       loop_control:
         label: "{{ item.item.message }}"
 
+    - name: Predict index creation
+      pyrodie18.splunk.index:
+        name: fixture_events
+        retention_seconds: 86400
+        max_total_size_mb: 500
+      check_mode: true
+      diff: true
+      register: index_preview
+
+    - name: Read the index after the preview
+      pyrodie18.splunk.index_info:
+        name: fixture_events
+      register: missing_index
+
+    - name: Verify creation was predicted without writing
+      ansible.builtin.assert:
+        that:
+          - index_preview is changed
+          - index_preview.diff.after.retention_seconds == 86400
+          - missing_index.indexes == []
+
+    - name: Try to create an index without write permission
+      pyrodie18.splunk.index:
+        name: fixture_events
+        retention_seconds: 86400
+        max_total_size_mb: 500
+        token: "{{ 'fixture-forbidden-token' }}"
+      register: index_denied
+      ignore_errors: true
+
+    - name: Check the write error
+      ansible.builtin.assert:
+        that:
+          - index_denied is failed
+          - index_denied is not changed
+          - index_denied.status == 403
+          - "'permission denied' in index_denied.msg"
+
+    - name: Create the event index
+      pyrodie18.splunk.index:
+        name: fixture_events
+        retention_seconds: 86400
+        max_total_size_mb: 500
+      register: created_index
+
+    - name: Update only retention
+      pyrodie18.splunk.index:
+        name: fixture_events
+        retention_seconds: 172800
+      register: updated_index
+
+    - name: Repeat the update
+      pyrodie18.splunk.index:
+        name: fixture_events
+        retention_seconds: 172800
+      register: repeated_index
+
+    - name: List and normalize the stored index
+      pyrodie18.splunk.index_info:
+      register: list_indexes
+
+    - name: Verify requested settings and convergence
+      ansible.builtin.assert:
+        that:
+          - created_index is changed
+          - updated_index is changed
+          - repeated_index is not changed
+          - list_indexes is not changed
+          - list_indexes.indexes == [updated_index.index]
+          - updated_index.index.name == 'fixture_events'
+          - updated_index.index.datatype == 'event'
+          - updated_index.index.retention_seconds == 172800
+          - updated_index.index.max_total_size_mb == 500
+
 - name: Exercise both modules with the same inventory host
   hosts: localhost
   gather_facts: false

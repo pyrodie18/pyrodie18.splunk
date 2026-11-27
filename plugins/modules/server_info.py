@@ -18,43 +18,8 @@ description:
   - For inventory authentication use C(splunk_token) or the C(splunk_username) and C(splunk_password) pair.
 author:
   - pyrodie18 (@pyrodie18)
-options:
-  url:
-    description:
-      - HTTPS origin of the Splunk management API, typically V(https://splunk.example.com:8089).
-      - Required unless provided by C(splunk_url) in inventory.
-    type: str
-  token:
-    description:
-      - Splunk management API bearer token.
-      - Supply this or the O(username) and O(password) pair.
-    type: str
-  username:
-    description:
-      - Username for HTTP Basic authentication.
-      - Required with O(password) and mutually exclusive with O(token).
-    type: str
-  password:
-    description:
-      - Password for HTTP Basic authentication.
-      - Required with O(username) and mutually exclusive with O(token).
-    type: str
-  validate_certs:
-    description:
-      - Verify the management server certificate and hostname.
-      - Disable only for a disposable lab with an untrusted certificate.
-    type: bool
-    default: true
-  ca_path:
-    description:
-      - Path on the execution host to a PEM CA file used to verify the server.
-      - Used when O(validate_certs=true).
-    type: path
-  timeout:
-    description:
-      - Network timeout in seconds for each REST request. Must be at least one.
-    type: int
-    default: 10
+extends_documentation_fragment:
+  - pyrodie18.splunk.management_api
 attributes:
   action:
     description: A companion action plugin runs the REST requests on the controller.
@@ -182,19 +147,19 @@ status:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pyrodie18.splunk.plugins.module_utils.client import (
+    AUTH_CONSTRAINTS,
+    CONNECTION_ARGUMENT_SPEC,
     SplunkClient,
     SplunkError,
 )
 from ansible_collections.pyrodie18.splunk.plugins.module_utils.server_info import (
-    ARGUMENT_SPEC,
-    AUTH_CONSTRAINTS,
     read_server_info,
 )
 
 
 def main():
     module = AnsibleModule(
-        argument_spec=ARGUMENT_SPEC,
+        argument_spec=CONNECTION_ARGUMENT_SPEC,
         supports_check_mode=True,
         **AUTH_CONSTRAINTS,
     )
