@@ -9,3 +9,5 @@ splunk:
             serverCert: /opt/splunk-ci/server.pem
             sslRootCAPath: /opt/splunk-ci/ca.pem
             sslPassword: ''
+          dataplaneSslConfig:
+            serverCertDataplane: /opt/splunk-ci/server_dp.pem

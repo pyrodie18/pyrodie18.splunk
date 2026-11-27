@@ -18,7 +18,7 @@ from base64 import b64encode
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import monotonic, sleep
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import HTTPSHandler, ProxyHandler, Request, build_opener
 
@@ -41,20 +41,26 @@ def prepare_keys(directory):
         ['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
          '-subj', '/CN=Splunk CI CA', '-addext', 'basicConstraints=critical,CA:TRUE',
          '-keyout', 'ca.key', '-out', 'ca.pem'],
-        ['openssl', 'req', '-newkey', 'rsa:2048', '-nodes', '-subj', '/CN=splunk-ci',
-         '-keyout', 'server.key', '-out', 'server.csr'],
-        ['openssl', 'x509', '-req', '-days', '1', '-in', 'server.csr', '-CA', 'ca.pem', '-CAkey', 'ca.key',
-         '-CAcreateserial', '-extfile', 'tls-extensions', '-out', 'server.crt'],
         ['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-f', 'ssh_host_ed25519_key'],
         ['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-f', 'ssh_client_key'],
     ]
+    # The management and data-plane certificates need to share a CA.
+    for name in ('server', 'server_dp'):
+        commands.extend([
+            ['openssl', 'req', '-newkey', 'rsa:2048', '-nodes', '-subj', '/CN=splunk-ci',
+             '-keyout', f'{name}.key', '-out', f'{name}.csr'],
+            ['openssl', 'x509', '-req', '-days', '1', '-in', f'{name}.csr',
+             '-CA', 'ca.pem', '-CAkey', 'ca.key', '-CAcreateserial',
+             '-extfile', 'tls-extensions', '-out', f'{name}.crt'],
+        ])
     for command in commands:
         result = subprocess.run(command, cwd=directory, capture_output=True, text=True, check=False)
         if result.returncode:
             raise RuntimeError(f'{command[0]} could not create test credentials: {result.stderr.strip()}')
-    with (directory / 'server.pem').open('wb') as bundle:
-        for name in ('server.crt', 'server.key', 'ca.pem'):
-            bundle.write((directory / name).read_bytes())
+    for name in ('server', 'server_dp'):
+        with (directory / f'{name}.pem').open('wb') as bundle:
+            for filename in (f'{name}.crt', f'{name}.key', 'ca.pem'):
+                bundle.write((directory / filename).read_bytes())
 
 
 def install_keys(container, image, directory):
@@ -67,6 +73,7 @@ def install_keys(container, image, directory):
     splunk_uid, splunk_gid = map(int, account.split())
     assets = [
         ('server.pem', 'server.pem', splunk_uid, splunk_gid, 0o600),
+        ('server_dp.pem', 'server_dp.pem', splunk_uid, splunk_gid, 0o600),
         ('ca.pem', 'ca.pem', 0, splunk_gid, 0o644),
         ('ssh_host_ed25519_key', 'ssh_host_ed25519_key', 0, 0, 0o600),
         ('ssh_client_key.pub', 'authorized_keys', 0, 0, 0o644),
@@ -94,6 +101,19 @@ def management_request(opener, origin, basic_auth, path, fields=None):
     request = Request(origin + path, data=data, headers={'Authorization': basic_auth})
     with opener.open(request, timeout=5) as response:
         return json.load(response)
+
+
+def configure_token_auth(opener, origin, basic_auth, endpoint, fields):
+    # The token API can still be starting after server/info is available.
+    deadline = monotonic() + 120
+    while True:
+        try:
+            return management_request(opener, origin, basic_auth, endpoint + '?output_mode=json', fields)
+        except HTTPError as error:
+            with error:
+                if error.code != 503 or monotonic() >= deadline:
+                    raise RuntimeError(f'{endpoint}: HTTP {error.code} {error.reason}') from None
+        sleep(3)
 
 
 def wait_for_services(container, ssh, opener, origin, basic_auth):
@@ -225,10 +245,10 @@ def run_integration(version, base_image, directory):
         auth = f'Basic {basic}'
         print(f'Waiting for Splunk {version} HTTPS and SSH readiness', flush=True)
         wait_for_services(container, ['ssh', *ssh_options, '-p', str(port)], opener, origin, auth)
-        management_request(opener, origin, auth, '/services/admin/token-auth/tokens_auth?output_mode=json',
-                           {'disabled': 'false'})
-        document = management_request(opener, origin, auth, '/services/authorization/tokens?output_mode=json',
-                                      {'name': 'admin', 'audience': 'collection-ci', 'expires_on': '+1h'})
+        configure_token_auth(opener, origin, auth, '/services/admin/token-auth/tokens_auth',
+                             {'disabled': 'false'})
+        document = configure_token_auth(opener, origin, auth, '/services/authorization/tokens',
+                                        {'name': 'admin', 'audience': 'collection-ci', 'expires_on': '+1h'})
         token = document['entry'][0]['content']['token']
         if not isinstance(token, str) or not token:
             raise RuntimeError('Splunk did not return a bearer token')
