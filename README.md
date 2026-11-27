@@ -18,7 +18,7 @@ uv lock --check
 uv run --frozen ruff check plugins tests
 uv run --frozen ansible-test sanity --docker
 uv run --frozen ansible-test units --docker --python 3.12
-uv run --frozen ansible-test integration --local --python 3.12
+uv run --frozen ansible-test integration splunk_fixture/ --local --python 3.12
 uv run --frozen ansible-galaxy collection build --output-path "$(mktemp -d)"
 ```
 
@@ -40,6 +40,8 @@ SPLUNK_CI_ACCEPT_TERMS=true uv run --frozen python tests/integration/live/run.py
 ```
 
 Update image pins in a PR with the full suite passing. Choose a collection distribution license and start a user-facing changelog before publishing to Galaxy.
+
+The live suite uses separate `ansible-test` targets for `live_server_info`, `live_service_info`, and `live_mixed_transport`. All three share the container and temporary inventory for a matrix job. Append `--target live_server_info` to the command above to run just that target. New live targets belong under `tests/integration/targets/` with the `splunk_live` alias so CI discovers them automatically.
 
 ## Live smoke tests
 

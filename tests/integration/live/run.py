@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Run the full integration play against a disposable Splunk Enterprise container."""
+"""Run live integration targets against a disposable Splunk Enterprise container."""
 
 import argparse
 import io
@@ -144,7 +144,7 @@ def wait_for_services(container, ssh, opener, origin, basic_auth):
     raise RuntimeError(f'Splunk did not become ready in {READY_TIMEOUT}s. {last_status}')
 
 
-def run_playbook(directory, version, origin, port, ssh_options, password, token, redact):
+def run_targets(directory, version, origin, port, ssh_options, password, token, target, redact):
     inventory = {
         'all': {
             'vars': {
@@ -173,27 +173,36 @@ def run_playbook(directory, version, origin, port, ssh_options, password, token,
     }
     inventory_file = directory / 'inventory.json'
     inventory_file.write_text(json.dumps(inventory))
-    for mode in ([], ['--check']):
-        print(f"Running Splunk {version} integration in {'check' if mode else 'normal'} mode", flush=True)
-        result = subprocess.run(
-            ['ansible-playbook', '-i', str(inventory_file), *mode, str(LIVE_DIR / 'test.yml')],
-            env={
-                **os.environ,
-                'ANSIBLE_COLLECTIONS_PATH': str(COLLECTION_ROOT.parents[2]),
-                'ANSIBLE_HOST_KEY_CHECKING': 'True',
-                'ANSIBLE_LOCAL_TEMP': str(directory / 'ansible'),
-            },
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=False,
-        )
-        output = redact(result.stdout)
-        print(output, end='', flush=True)
-        if output != result.stdout:
-            raise RuntimeError('A test credential appeared in Ansible output')
-        if result.returncode:
-            raise RuntimeError('The Splunk integration playbook failed')
+    inventory_file.chmod(0o600)
+
+    # ansible-test filters the environment. Use its inherited PATH to hand targets
+    # a command that can access the private inventory without copying credentials.
+    launcher = directory / 'splunk-live-playbook'
+    launcher.write_text(
+        '#!/bin/sh\n'
+        'export ANSIBLE_HOST_KEY_CHECKING=true\n'
+        f'export ANSIBLE_LOCAL_TEMP={shlex.quote(str(directory / "ansible"))}\n'
+        f'exec ansible-playbook -i {shlex.quote(str(inventory_file))} "$@"\n',
+    )
+    launcher.chmod(0o700)
+
+    command = ['ansible-test', 'integration', 'splunk_live/', '--local', '--python', '3.12', '--continue-on-error']
+    if target:
+        command.extend(['--require', re.escape(target)])
+    result = subprocess.run(
+        command,
+        env={**os.environ, 'PATH': os.pathsep.join((str(directory), os.environ['PATH']))},
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=False,
+    )
+    output = redact(result.stdout)
+    print(output, end='', flush=True)
+    if output != result.stdout:
+        raise RuntimeError('A test credential appeared in Ansible output')
+    if result.returncode:
+        raise RuntimeError('The Splunk integration targets failed')
 
 
-def run_integration(version, base_image, directory):
+def run_integration(version, base_image, directory, target):
     name = f'splunk-collection-ci-{secrets.token_hex(6)}'
     image = f'{name}:local'
     password = 'Splunk-CI9!' + secrets.token_hex(24)
@@ -261,7 +270,7 @@ def run_integration(version, base_image, directory):
         if not isinstance(token, str) or not token:
             raise RuntimeError('Splunk did not return a bearer token')
         credentials.append(token)
-        run_playbook(directory, image_version, origin, port, ssh_options, password, token, redact)
+        run_targets(directory, image_version, origin, port, ssh_options, password, token, target, redact)
     except (OSError, RuntimeError, ValueError, LookupError, subprocess.SubprocessError) as error:
         print(redact(str(error)), file=sys.stderr)
         if container:
@@ -281,6 +290,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('version', help='exact Splunk patch version to assert')
     parser.add_argument('image', help='digest-pinned official Splunk RHEL 9 image')
+    parser.add_argument('--target', help='run one live integration target by name')
     args = parser.parse_args()
     expected_image = rf'splunk/splunk:{re.escape(args.version)}-rhel9@sha256:[0-9a-f]{{64}}'
     if not re.fullmatch(r'10\.\d+\.\d+', args.version) or not re.fullmatch(expected_image, args.image):
@@ -289,11 +299,11 @@ def main():
         parser.error('run from the ansible_collections/pyrodie18/splunk collection root')
     if os.environ.get('SPLUNK_CI_ACCEPT_TERMS') != 'true':
         parser.error('after accepting the Splunk terms, set SPLUNK_CI_ACCEPT_TERMS=true')
-    for tool in ('docker', 'openssl', 'ssh', 'ssh-keygen', 'ansible-playbook'):
+    for tool in ('docker', 'openssl', 'ssh', 'ssh-keygen', 'ansible-test'):
         if not shutil.which(tool):
             parser.error(f'{tool} is required for the live integration suite')
     with TemporaryDirectory(prefix='splunk-collection-ci-') as path:
-        return run_integration(args.version, args.image, Path(path))
+        return run_integration(args.version, args.image, Path(path), args.target)
 
 
 if __name__ == '__main__':

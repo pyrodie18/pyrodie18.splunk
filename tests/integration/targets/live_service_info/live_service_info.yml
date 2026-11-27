@@ -1,0 +1,23 @@
+---
+- name: Read Splunk service information over SSH
+  hosts: splunk_container
+  gather_facts: false
+  tasks:
+    - name: Confirm the SSH user is the Splunk service account
+      ansible.builtin.command:
+        argv: [id, -un]
+      check_mode: false
+      changed_when: false
+      register: ssh_account
+
+    - name: Read service information
+      pyrodie18.splunk.service_info:
+      register: service_info
+
+    - name: Verify the running service and read-only result
+      ansible.builtin.assert:
+        that:
+          - ssh_account.stdout == 'splunk'
+          - service_info is not changed
+          - service_info.version.split()[1] == expected_version
+          - "'splunkd is running' in service_info.status"

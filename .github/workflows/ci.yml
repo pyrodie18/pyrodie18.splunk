@@ -44,7 +44,7 @@ jobs:
       - name: Run Ansible unit tests
         run: uv run --frozen ansible-test units --docker --python 3.12
       - name: Run all fixture integration targets
-        run: uv run --frozen ansible-test integration --local --python 3.12
+        run: uv run --frozen ansible-test integration splunk_fixture/ --local --python 3.12
       - name: Verify documentation from the installed Galaxy artifact
         run: |
           build_dir=$(mktemp -d)
