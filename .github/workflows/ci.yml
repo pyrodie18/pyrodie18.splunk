@@ -75,14 +75,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - version: 10.0.0
-            image: splunk/splunk:10.0-rhel9
-          - version: 10.2.0
-            image: splunk/splunk:10.2-rhel9
-          - version: 10.4.0
-            image: splunk/splunk:10.4-rhel9
-          - version: 10.6.0
-            image: splunk/splunk:10.6-rhel9
+          - version: 10.0.13
+            digest: sha256:1d46bf3b6e8b9d80f2d54252574a52993ab030902caec22325406bc1c87b0d4b
+          - version: 10.2.10
+            digest: sha256:897dde2b96167e34c9152ea8175442235ae5e22260c2f7e558116828963b0d61
+          - version: 10.4.6
+            digest: sha256:043fd010054dc93cafe4ce14516a56e7de4d01601a2aed3a64984b6ae71ce9c2
+          - version: 10.6.2
+            digest: sha256:e670efd38e5f4614804f54afab585e0e300d35a17d7a9573dc67361a64f9c5e6
     defaults:
       run:
         shell: bash
@@ -105,7 +105,7 @@ jobs:
       - name: Run live HTTPS and SSH integration tests
         env:
           SPLUNK_CI_ACCEPT_TERMS: ${{ vars.SPLUNK_CI_ACCEPT_TERMS }}
-          SPLUNK_CI_IMAGE: ${{ matrix.image }}
+          SPLUNK_CI_IMAGE: splunk/splunk:${{ matrix.version }}-rhel9@${{ matrix.digest }}
           SPLUNK_CI_VERSION: ${{ matrix.version }}
         run: uv run --frozen python tests/integration/live/run.py "$SPLUNK_CI_VERSION" "$SPLUNK_CI_IMAGE"
 

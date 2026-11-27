@@ -32,7 +32,7 @@ GitHub Actions runs [Collection CI](.github/workflows/ci.yml) on PRs to `main` a
 
 After accepting the [Splunk General Terms](https://www.splunk.com/en_us/legal/splunk-general-terms.html) and the license terms, set the repository Actions variable `SPLUNK_CI_ACCEPT_TERMS` to `true`. Once the workflow has a successful PR run, configure the `main` ruleset to require pull requests and the **Collection CI required** check from GitHub Actions. To verify enforcement, temporarily fail one live assertion on a test PR, confirm the other versions finish and merge is blocked, then revert the assertion and confirm the required check passes.
 
-To reproduce one live job, run the following from the collection root on a Linux x86-64 environment with a local Docker daemon, OpenSSL, and OpenSSH client tools. Copy the desired version and full image reference from the workflow matrix. Set the acceptance variable locally after accepting the same terms.
+To reproduce one live job, run the following from the collection root on a Linux x86-64 environment with a local Docker daemon, OpenSSL, and OpenSSH client tools. Use the desired version and digest from the workflow matrix to form the image reference. Set the acceptance variable locally after accepting the same terms.
 
 ```sh
 SPLUNK_CI_ACCEPT_TERMS=true uv run --frozen python tests/integration/live/run.py \
